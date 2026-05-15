@@ -8,7 +8,7 @@ const upload = multer(); // Middleware to parse multipart/form-data (FormData)
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
 const model = genAI.getGenerativeModel({
-  model: "gemini-2.0-flash",
+  model: "gemini-1.5-flash",
 }, { apiVersion: "v1" }); // Explicitly use v1 to fix the 404 error
 
 router.post("/", upload.none(), async (req, res) => {
