@@ -283,7 +283,7 @@ function App() {
   const handleRecover = async (e) => {
     e.preventDefault();
     try {
-      await axios.post("http://localhost:5000/api/auth/forgot-password", { email: emailInput });
+      await axios.post("https://superchat-llm.onrender.com/api/auth/forgot-password", { email: emailInput });
       alert("Recovery email sent! (Simulation)");
       setIsRecovering(false);
     } catch (error) {
@@ -329,7 +329,7 @@ function App() {
   useEffect(() => {
     const token = localStorage.getItem("token");
     if (token) {
-      axios.get("http://localhost:5000/protected", {
+      axios.get("https://superchat-llm.onrender.com/protected", {
         headers: { Authorization: token }
       }).catch(() => {
         handleLogout();
