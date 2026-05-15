@@ -128,7 +128,9 @@ router.post("/forgot-password", async (req, res) => {
       },
     });
 
-    const resetUrl = `http://localhost:5173/reset-password/${token}`;
+    // Dynamic URL based on environment (Frontend URL)
+    const frontendUrl = process.env.FRONTEND_URL || "https://superchat-llm.onrender.com";
+    const resetUrl = `${frontendUrl}/reset-password/${token}`;
 
     const mailOptions = {
       to: user.email,

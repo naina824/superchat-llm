@@ -20,7 +20,8 @@ const imageRoute = require("./routes/imageRoute");
 // Mounting routes
 app.use("/api/chat", chatRoutes);
 app.use("/api/auth", authRoutes);
-app.use("/api/image", imageRoute);
+// Fixed mounting: Frontend calls /api/generate-image, so we mount imageRoute at /api
+app.use("/api", imageRoute);
 
 // Optional: Fix the 404 for the session check on app load
 app.get("/protected", (req, res) => {

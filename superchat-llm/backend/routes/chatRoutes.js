@@ -8,14 +8,17 @@ const upload = multer(); // Middleware to parse multipart/form-data (FormData)
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
 const model = genAI.getGenerativeModel({
-  model: "gemini-1.5-flash",
-});
+  model: "gemini-1.5-flash-latest",
+}, { apiVersion: "v1" }); // Explicitly use v1 to fix the 404 error
 
 router.post("/", upload.none(), async (req, res) => {
   try {
-    const { message } = req.body;
+    const { message, language } = req.body;
 
-    const result = await model.generateContent(message);
+    // Optional: Use the language preference from the frontend to guide the AI
+    const prompt = language ? `[System: Respond in ${language}] ${message}` : message;
+
+    const result = await model.generateContent(prompt);
 
     const reply = result.response.text();
 
