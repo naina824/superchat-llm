@@ -2,6 +2,8 @@ import React, { useState } from "react";
 import axios from "axios";
 import "./App.css";
 
+const API_BASE_URL = "https://superchat-llm.onrender.com";
+
 function ResetPassword({ currentTheme }) {
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
@@ -30,7 +32,7 @@ function ResetPassword({ currentTheme }) {
 
     setIsLoading(true);
     try {
-      const res = await axios.post(`https://superchat-llm.onrender.com/api/auth/reset-password/${token}`, {
+      const res = await axios.post(`${API_BASE_URL}/api/auth/reset-password/${token}`, {
         password,
         confirmPassword,
       });

@@ -70,10 +70,14 @@ const uiTranslations = {
   "Italian": { loading: "Generazione della tua immagine...", genText: "Generata", error: "Generazione immagine fallita." }
 };
 
+// Use an environment variable if available, otherwise fallback to production
+const API_BASE_URL = import.meta.env.VITE_API_URL || "https://superchat-llm.onrender.com";
+const UNSPLASH_KEY = import.meta.env.VITE_UNSPLASH_KEY || "YOUR_UNSPLASH_ACCESS_KEY";
+
 // Helper to fetch an image from Unsplash
 const fetchImageFromSearch = async (query) => {
   try {
-    const res = await axios.get(`https://api.unsplash.com/search/photos?page=1&query=${query}&client_id=YOUR_UNSPLASH_ACCESS_KEY`);
+    const res = await axios.get(`https://api.unsplash.com/search/photos?page=1&query=${query}&client_id=${UNSPLASH_KEY}`);
     return res.data.results[0]?.urls?.regular || null;
   } catch (error) {
     console.error("Search API Error:", error);
@@ -266,7 +270,7 @@ function App() {
     try {
       const endpoint = isRegistering ? "register" : "login";
       const payload = isRegistering ? { email, password, name } : { email, password };
-      const res = await axios.post(`https://superchat-llm.onrender.com/api/auth/${endpoint}`, payload);
+      const res = await axios.post(`${API_BASE_URL}/api/auth/${endpoint}`, payload);
       
       const loggedInUser = res.data.user;
       const token = res.data.token;
@@ -283,7 +287,7 @@ function App() {
   const handleRecover = async (e) => {
     e.preventDefault();
     try {
-      await axios.post("https://superchat-llm.onrender.com/api/auth/forgot-password", { email: emailInput });
+      await axios.post(`${API_BASE_URL}/api/auth/forgot-password`, { email: emailInput });
       alert("Recovery email sent! (Simulation)");
       setIsRecovering(false);
     } catch (error) {
@@ -329,8 +333,8 @@ function App() {
   useEffect(() => {
     const token = localStorage.getItem("token");
     if (token) {
-      axios.get("https://superchat-llm.onrender.com/protected", {
-        headers: { Authorization: token }
+      axios.get(`${API_BASE_URL}/protected`, {
+        headers: { Authorization: `Bearer ${token}` }
       }).catch(() => {
         handleLogout();
       });
@@ -455,9 +459,13 @@ function App() {
     setMessages((prev) => [...prev, loadingMsg]);
 
     try {
+      const token = localStorage.getItem("token");
       const res = await axios.post(
-        "https://superchat-llm.onrender.com/api/generate-image",
+        `${API_BASE_URL}/api/generate-image`,
         { prompt, language },
+        {
+          headers: token ? { Authorization: `Bearer ${token}` } : {}
+        }
       );
 
       setMessages((prev) => {
@@ -547,10 +555,12 @@ function App() {
         formData.append("file", selectedFile.file);
       }
 
+      const token = localStorage.getItem("token");
       const response = await axios.post(
-        "https://superchat-llm.onrender.com/api/chat",
+        `${API_BASE_URL}/api/chat`,
         formData,
         {
+          headers: token ? { Authorization: `Bearer ${token}` } : {}
         });
 
       let aiReply = response.data.reply || response.data.text || "No response from AI";
@@ -587,10 +597,10 @@ function App() {
       speech.lang = currentLangObj ? currentLangObj.code : "en-US";
       window.speechSynthesis.speak(speech);
     } catch (error) {
-      console.error("Error:", error);
+      console.error("Detailed Backend Error:", error.response || error);
 
       const errorMessage = {
-        text: "Backend connection failed. Please check server.",
+        text: `Error: ${error.response?.data?.message || "Backend connection failed. Check console for details."}`,
         sender: "ai",
         timestamp: new Date().toLocaleTimeString([], {
           hour: "2-digit",
