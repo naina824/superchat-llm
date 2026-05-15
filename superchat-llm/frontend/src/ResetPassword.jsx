@@ -30,7 +30,7 @@ function ResetPassword({ currentTheme }) {
 
     setIsLoading(true);
     try {
-      const res = await axios.post(`https://s/api/auth/reset-password/${token}`, {
+      const res = await axios.post(`https://superchat-llm.onrender.com/api/auth/reset-password/${token}`, {
         password,
         confirmPassword,
       });
