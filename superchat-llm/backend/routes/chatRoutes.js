@@ -21,10 +21,10 @@ router.post("/", upload.none(), async (req, res) => {
 
     res.json({ reply });
   } catch (error) {
-    console.log(error);
+    console.log("Gemini Error:", error);
 
     res.status(500).json({
-      message: "Gemini API error",
+      message: error.message,
     });
   }
 });
