@@ -266,7 +266,7 @@ function App() {
     try {
       const endpoint = isRegistering ? "register" : "login";
       const payload = isRegistering ? { email, password, name } : { email, password };
-      const res = await axios.post(`http://localhost:5000/api/auth/${endpoint}`, payload);
+      const res = await axios.post(`https://superchat-llm.onrender.com/api/auth/${endpoint}`, payload);
       
       const loggedInUser = res.data.user;
       const token = res.data.token;
@@ -456,7 +456,7 @@ function App() {
 
     try {
       const res = await axios.post(
-        "http://localhost:5000/api/generate-image",
+        "https://superchat-llm.onrender.com/api/generate-image",
         { prompt, language },
       );
 
@@ -548,7 +548,7 @@ function App() {
       }
 
       const response = await axios.post(
-        "http://localhost:5000/api/chat",
+        "https://superchat-llm.onrender.com/api/chat",
         formData,
         {
         });
