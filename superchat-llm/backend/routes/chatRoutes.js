@@ -14,17 +14,17 @@ const model = genAI.getGenerativeModel({
 
 router.post("/", upload.none(), async (req, res) => {
   try {
-    const { message, language } = req.body;
+    const { message, userMessage, language } = req.body;
 
     // Optional: Use the language preference from the frontend to guide the AI
-    const prompt = language ? `[System: Respond in ${language}] ${message}` : message;
+    const prompt = language ? `[System: Respond in ${language}] ${userMessage}` : userMessage;
 
 
     const result = await model.generateContent(prompt);
 
     const reply = result.response.text();
     const savedmessage = await message.create({
-      userMessage: message,
+      userMessage: userMessage,
       aiResponse: reply,
 
     })
