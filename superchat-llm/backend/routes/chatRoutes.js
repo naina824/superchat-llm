@@ -1,7 +1,7 @@
 const express = require('express');
 const multer = require('multer');
 const { GoogleGenerativeAI } = require("@google/generative-ai");
-const message = require("../models/message");
+const Message = require("../models/message");
 
 const router = express.Router();
 const upload = multer(); // Middleware to parse multipart/form-data (FormData)
@@ -23,10 +23,11 @@ router.post("/", upload.none(), async (req, res) => {
     const result = await model.generateContent(prompt);
 
     const reply = result.response.text();
-    const savedmessage = await message.create({
+    const savedmessage = await Message.create({
       userMessage: userMessage,
       aiResponse: reply,
 
+      
     })
     console.log("Saved:", savedmessage);
 
