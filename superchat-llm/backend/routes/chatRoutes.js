@@ -1,43 +1,65 @@
-const express = require('express');
-const multer = require('multer');
+const express = require("express");
+const multer = require("multer");
 const { GoogleGenerativeAI } = require("@google/generative-ai");
 const Message = require("../models/message");
 
 const router = express.Router();
-const upload = multer(); // Middleware to parse multipart/form-data (FormData)
+const upload = multer();
 
+// Check API key
+if (!process.env.GEMINI_API_KEY) {
+  throw new Error("GEMINI_API_KEY is missing in .env file");
+}
+
+// Gemini setup
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
+// Correct model initialization
 const model = genAI.getGenerativeModel({
-  model: "gemini-1.5-flash",
-}, { apiVersion: "v1" }); // Explicitly use v1 to fix the 404 error
+  model: "gemini-2.5-flash",
+});
 
 router.post("/", upload.none(), async (req, res) => {
   try {
-    const { message,  language } = req.body;
+    const { message, language, username } = req.body;
 
-    // Optional: Use the language preference from the frontend to guide the AI
-    const prompt = language ? `[System: Respond in ${language}] ${message}` : message;
+    // Validate input
+    if (!message) {
+      return res.status(400).json({
+        message: "Message is required",
+      });
+    }
 
+    // Create prompt
+    const prompt = language
+      ? `Respond in ${language}: ${message}`
+      : message;
 
+    // Generate AI response
     const result = await model.generateContent(prompt);
 
+    // Extract text safely
     const reply = result.response.text();
-    const savedmessage = await Message.create({
-      username: "Naina",
+
+    // Save to MongoDB
+    const savedMessage = await Message.create({
+      username,
       userMessage: message,
       aiResponse: reply,
+    });
 
-      
-    })
-    console.log("Saved:", savedmessage);
+    console.log("Saved:", savedMessage);
 
-    res.json({ reply });
+    // Send response
+    res.json({
+      reply,
+    });
+
   } catch (error) {
-    console.log("Gemini Error:", error);
+    console.error("Detailed Backend Error:", error);
 
     res.status(500).json({
-      message: error.message,
+      message: error.message || "Something went wrong",
     });
   }
 });
