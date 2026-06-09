@@ -974,23 +974,6 @@ function App() {
                 <span style={{ color: 'var(--accent-color)' }}>🎤</span>
               </button>
 
-          <select
-            value={provider}
-            onChange={(e) => setProvider(e.target.value)}
-            style={{
-              padding: '6px 10px',
-              borderRadius: '8px',
-              border: '1px solid var(--input-box-border)',
-              backgroundColor: 'transparent',
-              color: 'var(--input-text-color)',
-              outline: 'none',
-              cursor: 'pointer'
-            }}
-          >
-            <option value="gemini">Gemini 2.5 Flash</option>
-            <option value="ollama">Llama 3.2 Offline</option>
-          </select>
-
               <button 
                 onClick={sendMessage} 
                 disabled={isLoading}

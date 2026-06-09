@@ -39,7 +39,11 @@ router.post("/", upload.none(), async (req, res) => {
       stream: false
     });
     const reply = ollamaResponse.data.message.content;
-
+    await Message.create({
+      userMessage: message,
+      aiResponse: reply,
+    })
+    console.log("saved to MongoDB");
     
 
     // Send response

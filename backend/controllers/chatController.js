@@ -51,13 +51,16 @@ Assistant:`;
     const aiReply = response.data.response;
 
     // Save to MongoDB
-    if(process.env.MONGO_URI){
+    console.log("Received message:", message);
+    console.log("AI Reply:", aiReply);
+
       await Message.create({
         userMessage: message,
         aiResponse: aiReply,
       });
-    }
-    
+      
+      console.log("saved to MongoDB");
+        
 
     res.json({
       reply: aiReply,
