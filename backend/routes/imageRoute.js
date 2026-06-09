@@ -1,11 +1,6 @@
 const express = require("express");
 const router = express.Router();
-const { GoogleGenerativeAI } = require("@google/generative-ai");
 
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-const model = genAI.getGenerativeModel({
-  model: "gemini-1.5-flash",
-}, { apiVersion: "v1" });
 
 // Image Route using Ollama + Language Support
 router.post("/generate-image", async (req, res) => {
@@ -17,11 +12,7 @@ router.post("/generate-image", async (req, res) => {
       return res.status(400).json({ error: "Prompt is required" });
     }
 
-    // Use Gemini to generate a high-quality visual description
-    const result = await model.generateContent(
-      `Generate a detailed visual description for an image of: "${prompt}". 
-       Respond ONLY with the description in ${selectedLang}.`
-    );
+  
 
     const aiResponse = result.response.text();
     
