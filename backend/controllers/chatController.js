@@ -53,14 +53,11 @@ Assistant:`;
     // Save to MongoDB
     if(process.env.MONGO_URI){
       await Message.create({
-        message,
-        response: aiReply,
+        userMessage: message,
+        aiResponse: aiReply,
       });
     }
-    //await Message.create({
-      //message,
-      //response: aiReply,
-    //});
+    
 
     res.json({
       reply: aiReply,
