@@ -398,6 +398,17 @@ function App() {
       .catch(err => console.error("Failed to copy text: ", err));
   };
 
+  const handleEdit = (index) => {
+    if (isLoading) return; // Prevent editing while AI is generating a response
+    const msgToEdit = messages[index];
+    if (msgToEdit) {
+      setInput(msgToEdit.text);
+      const updatedMessages = messages.slice(0, index);
+      setMessages(updatedMessages);
+      updateHistory(updatedMessages, msgToEdit.text);
+    }
+  };
+
   const handleAvatarChange = (e) => {
     const file = e.target.files[0];
     if (file) {
@@ -879,14 +890,9 @@ function App() {
             {Array.isArray(messages) && messages.map((msg, index) => (
               <div key={index} className={`message-wrapper ${msg.sender}`}>
                 {msg.sender === "ai" && <div className="avatar ai-avatar">🤖</div>}
-                <div className={`message ${msg.sender}`}>
-                  {msg.sender === "ai" && (
-                    <button 
-                      className="copy-msg-btn" 
-                      onClick={() => copyToClipboard(msg.text)}
-                      title="Copy Response"
-                    >📋</button>
-                  )}
+                
+                <div className={`message-container ${msg.sender}`}>
+                  <div className={`message ${msg.sender}`}>
                   {msg.image && (
                     <div className="image-container">
                       <img 
@@ -918,6 +924,19 @@ function App() {
                     <div className="ai-badge">AI Response</div>
                   )}
                 </div>
+
+                  <div className="message-actions">
+                    <button onClick={() => copyToClipboard(msg.text)} title="Copy Message">
+                      📋 Copy
+                    </button>
+                    {msg.sender === "user" && (
+                      <button onClick={() => handleEdit(index)} title="Edit Message" disabled={isLoading}>
+                        ✏️ Edit
+                      </button>
+                    )}
+                  </div>
+                </div>
+
                 {msg.sender === "user" && user && (
                   <div className="avatar user-avatar">
                     {customAvatar ? (
