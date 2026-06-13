@@ -6,7 +6,10 @@ const axios = require("axios");
 const router = express.Router();
 const upload = multer();
 
-router.post("/", upload.none(), async (req, res) => {
+router.post("/", upload.single("image"),  async (req, res) => {
+  console.log("File received:", req.file);
+  console.log("Filename:",req.file?.originalname);
+  console.log("Mimetype:",req.file?.mimetype);
   try {
     const { message, language, username, modelType, history } = req.body;
 

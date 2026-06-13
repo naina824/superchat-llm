@@ -564,7 +564,7 @@ function App() {
       formData.append("provider", provider);
 
       if (selectedFile?.file) {
-        formData.append("file", selectedFile.file);
+        formData.append("image", selectedFile.file);
       }
 
       const token = localStorage.getItem("token");
