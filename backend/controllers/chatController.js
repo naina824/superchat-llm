@@ -7,18 +7,18 @@ const chatWithModel = async (req, res) => {
     const { message, language } = req.body;
     const history = JSON.parse(req.body.history || "[]");
     const provider = req.body.provider || "llava";
-  
+
     const file = req.file;
     const selectedLang = language || "English";
 
-    console.log("Message:", message);
-
-     const modelName =
+    const modelName =
       provider === "llama" ? "llama3.2:3b" : "llava";
-      
-    // Convert the structured history array into a plain text transcript
+
     const historyText = history
-      .map((msg) => `${msg.role === "assistant" ? "Assistant" : "User"}: ${msg.content}`)
+      .map(
+        (msg) =>
+          `${msg.role === "assistant" ? "Assistant" : "User"}: ${msg.content}`
+      )
       .join("\n");
 
     let prompt = `You are a helpful AI assistant.
@@ -28,47 +28,79 @@ Previous Conversation:
 ${historyText}
 
 Current User Question:
-${file ? `Context: User uploaded a file named ${file.originalname}. ` : ""}${message}
+${file ? `Context: User uploaded a file named ${file.originalname}. ` : ""}
+${message}
 
 Assistant:`;
 
     let requestBody = {
       model: modelName,
-      prompt: prompt,
-      stream: false,
+      prompt,
+      stream: true,
     };
 
     if (file) {
-      const imageBase64 = fs.readFileSync(file.path, "base64");
+      const imageBase64 = file.buffer.toString("base64");
       requestBody.images = [imageBase64];
+      console.log("Image added to request");
     }
 
-    const response = await axios.post(
-      "http://127.0.0.1:11434/api/generate",
-      requestBody
-    );
+    res.setHeader("Content-Type", "text/plain");
+    res.setHeader("Transfer-Encoding", "chunked");
 
-    const aiReply = response.data.response;
+    const response = await axios({
+      method: "post",
+      url: "http://127.0.0.1:11434/api/generate",
+      data: requestBody,
+      responseType: "stream",
+    });
 
-    // Save to MongoDB
-    console.log("Received message:", message);
-    console.log("AI Reply:", aiReply);
+    let fullReply = "";
 
-      await Message.create({
-        userMessage: message,
-        aiResponse: aiReply,
-      });
-      
-      console.log("saved to MongoDB");
-        
+    response.data.on("data", (chunk) => {
+      const lines = chunk.toString().split("\n");
 
-    res.json({
-      reply: aiReply,
+      for (const line of lines) {
+        if (!line.trim()) continue;
+
+        try {
+          const parsed = JSON.parse(line);
+
+          if (parsed.response) {
+            fullReply += parsed.response;
+            res.write(parsed.response);
+          }
+        } catch (err) {
+          console.error("Chunk parse error:", err);
+        }
+      }
+    });
+
+    response.data.on("end", async () => {
+      try {
+        await Message.create({
+          userMessage: message,
+          aiResponse: fullReply,
+        });
+
+        console.log("saved to MongoDB");
+      } catch (dbError) {
+        console.error("MongoDB save error:", dbError);
+      }
+
+      res.end();
+    });
+
+    response.data.on("error", (err) => {
+      console.error("Stream error:", err);
+      res.end();
     });
 
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: "Server error" });
+    console.error("Chat controller error:", error);
+    res.status(500).json({
+      error: "Server error",
+    });
   }
 };
 

@@ -36,23 +36,69 @@ router.post("/", upload.single("image"),  async (req, res) => {
       : message;
 
     const currentMessage = { role: "user", content: prompt };
-    const ollamaResponse = await axios.post("http://localhost:11434/api/chat", {
-      model: "llama3.2:3b",
+    let chatData = {
+      model: "llava",
       messages: [...previousMessages, currentMessage],
-      stream: false
-    });
-    const reply = ollamaResponse.data.message.content;
-    await Message.create({
-      userMessage: message,
-      aiResponse: reply,
-    })
-    console.log("saved to MongoDB");
-    
+      stream: true
+    };
 
-    // Send response
-    res.json({
-      reply,
-    });
+    if(req.file) {
+      const imageBase64 = req.file.buffer.toString("base64");
+      chatData.messages = [...previousMessages,
+        {
+          role: "user",
+          content: prompt,
+          images: [imageBase64]
+        }
+      ];
+      console.log("Image added for Llava");
+    }
+
+  res.setHeader("Content-Type", "text/plain");
+  res.setHeader("Transfer-Encoding", "chunked");
+    
+    const ollamaResponse = await axios.post(
+  "http://localhost:11434/api/chat",
+  chatData,
+  {
+    responseType: "stream"
+  }
+);
+
+let fullReply = "";
+
+ollamaResponse.data.on("data", (chunk) => {
+  const lines = chunk.toString().split("\n");
+
+  for (const line of lines) {
+    if (!line.trim()) continue;
+
+    try {
+      const parsed = JSON.parse(line);
+
+      if (parsed.message?.content) {
+        const content = parsed.message.content;
+
+        fullReply += content;
+
+        res.write(content); // send chunk to frontend
+      }
+    } catch (err) {
+      console.error("Chunk parse error:", err);
+    }
+  }
+});
+
+ollamaResponse.data.on("end", async () => {
+  await Message.create({
+    userMessage: message,
+    aiResponse: fullReply,
+  });
+
+  console.log("saved to MongoDB");
+
+  res.end();
+});
 
   } catch (error) {
     console.error("Detailed Backend Error:", error);

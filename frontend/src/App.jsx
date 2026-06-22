@@ -463,7 +463,7 @@ function App() {
     const tempAiId = Date.now() + 1;
     const loadingMsg = {
       id: tempAiId,
-      text: uiTranslations[language]?.loading || uiTranslations["English"].loading,
+      text: "",
       sender: "ai",
       timestamp: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
       isPlaceholder: true,
@@ -529,12 +529,6 @@ function App() {
     const userInput = input;
     setInput(""); // Clear input immediately after capturing it
 
-    /**
-     * Natural Language Intent Detection
-     * Matches: "draw a cat", "can you generate an image of space?", "show me a picture of a dog", etc.
-     * Group 1: The action verb
-     * Group 2: The actual subject (the prompt)
-     */
     const imageIntentRegex = /(?:draw|generate|create|show\s+me|paint|sketch|image|picture|photo)\s+(?:(?:an?\s+)?(?:image|picture|photo|drawing|sketch)?(?:\s+(?:of|about|for))?\s+)?(.+)/i;
     const match = userInput.match(imageIntentRegex);
 
@@ -579,60 +573,81 @@ function App() {
       }
 
       const token = localStorage.getItem("token");
-      const response = await axios.post(
+      const response = await fetch(
         `${API_BASE_URL}/api/chat`,
-        formData,
         {
-          headers: token ? { Authorization: `Bearer ${token}` } : {}
+          method: "post",
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+          body: formData,
         });
+        console.log("Response:", response);
+        console.log("Body:", response.body);
+        const reader = response.body.getReader();
+        const decoder = new TextDecoder();
 
-      let aiReply = response.data.reply || response.data.text || "No response from AI";
-      let searchImageUrl = null;
+      let aiReply = "";
 
-      // Detect [SEARCH: query] pattern in the AI reply
-      const searchMatch = aiReply.match(/\[SEARCH:\s*(.*?)\]/i);
-      if (searchMatch) {
-        const query = searchMatch[1];
-        // Fetch the image from the search API
-        searchImageUrl = await fetchImageFromSearch(query);
-        // Remove the search tag from the displayed text
-        aiReply = aiReply.replace(searchMatch[0], "").trim();
+      const aiMessageId = Date.now();
+
+      setMessages((prev) => [
+        ...prev,
+        {
+          id: aiMessageId,
+          text: "",
+          sender: "ai",
+          isTyping: true,
+          timestamp: new Date().toLocaleTimeString([], {
+            hour: "2-digit",
+            minute: "2-digit",
+          }),
+        },
+      ]);
+      while (true) {
+        const { done, value } = await reader.read();
+        if (done) break;
+        const chunk = decoder.decode(value);
+        aiReply += chunk;
+        console.log("AI Reply:", aiReply);
+
+        setMessages((prev) =>
+        prev.map((msg) =>
+          msg.id === aiMessageId
+        ? { ...msg, 
+          text: aiReply, 
+          isTyping: aiReply.length === 0
+         }
+        : msg
+)
+    );
       }
-
-      const aiMessage = {
-        text: aiReply,
-        sender: "ai",
-        timestamp: new Date().toLocaleTimeString([], {
-          hour: "2-digit",
-          minute: "2-digit",
+      const updatedMessages = [...messages, userMessage, 
+        { 
+          id: aiMessageId,
+          text: aiReply, 
+          sender: "ai",
+          timestamp: new 
+          Date().toLocaleTimeString([],
+            
+        {
+          hour: "2-digit", 
+          minute: "2-digit" 
         }),
-        image: searchImageUrl || response.data.image_url || null,
-      };
-
-      setMessages((prev) => {
-        const updatedMessages = [...prev, aiMessage];
-        updateHistory(updatedMessages, userInput);
-        return updatedMessages;
-      });
-
-      const speech = new SpeechSynthesisUtterance(aiMessage.text);
-      const currentLangObj = languages.find(l => l.name === language);
-      speech.lang = currentLangObj ? currentLangObj.code : "en-US";
-      window.speechSynthesis.speak(speech);
+       },
+      ];
+updateHistory(updatedMessages, userInput);
     } catch (error) {
-      console.error("Detailed Backend Error:", error.response || error);
+      console.error("chat error:", error);
 
-      const errorMessage = {
-        text: `Error: ${error.response?.data?.message || "Backend connection failed. Check console for details."}`,
+      setMessages((prev) => [...prev, {
+        text: "Error generating response.",
         sender: "ai",
         timestamp: new Date().toLocaleTimeString([], {
           hour: "2-digit",
           minute: "2-digit",
         }),
-      };
-
-      setMessages((prev) => [...prev, errorMessage]);
-    } finally {
+      },
+    ]);
+    }finally {
       setIsLoading(false);
     }
   };
@@ -913,8 +928,16 @@ function App() {
                   
                   {msg.sender === "ai" ? (
                     <div className="markdown-content">
-                      <ReactMarkdown>{msg.text}</ReactMarkdown>
-                    </div>
+                      {msg.isTyping ? (
+                        <div className="typing-indicator">
+                          <span></span>
+                          <span></span>
+                          <span></span>
+                        </div>
+                      ) : (
+                        <ReactMarkdown>{msg.text}</ReactMarkdown>
+                      )}
+                      </div>
                   ) : (
                     <p className="message-text">{msg.text}</p>
                   )}
@@ -953,17 +976,7 @@ function App() {
               </div>
             ))}
 
-            {isLoading && (
-              <div className="message-wrapper ai">
-                <div className="avatar ai-avatar">🤖</div>
-                <div className="message ai typing">
-                  <span className="typing-label">AI is typing...</span>
-                  <span className="dot"></span>
-                  <span className="dot"></span>
-                  <span className="dot"></span>
-                </div>
-              </div>
-            )}
+          
 
             <div ref={chatEndRef}></div>
           </div>
